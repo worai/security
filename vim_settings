@@ -1,0 +1,41 @@
+" Enable syntax highlighting
+syntax on
+
+" Enable filetype specific plugins and indentation
+filetype plugin indent on
+
+" cursor line
+set cursorline
+
+" Set line numbers
+set number
+set relativenumber
+
+" Use spaces instead of tabs
+set expandtab
+set tabstop=2
+set shiftwidth=2
+
+" NOTE changing these require restart of vim
+
+" cycle autocompletion options
+inoremap <silent><expr> <Tab> pumvisible() ? "\<C-n>" : "\<Tab>"
+
+" accept option
+inoremap <silent><expr> <CR> pumvisible() ? "\<C-y>" : "\<CR>"
+" inoremap <expr> <CR> pumvisible() ? '<C-y>' : '<CR>'
+" inoremap <silent><expr> <CR> pumvisible() ? Ä\<C-y>\<C-r>=&l:formatoptions =~ 'o' ? '' : '\<CR>'\<CR>Ä : Ä\<CR>Ä
+" inoremap <expr> <CR> pumvisible() ? coc#_select_confirm() : '\<CR>'
+" inoremap <silent><expr> <CR> pumvisible() ? '\<C-y>' : '\<CR>'
+" inoremap <expr> <CR> pumvisible()
+
+" reverse cycle autocompletion options
+inoremap <silent><expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
+
+" skip to after parenthesis
+" inoremap <C-l> <C-o>f)<Right>
+" inoremap <C-l> <Esc>f)a
+inoremap <C-l> <Esc>hf)a
+
+" easier escape from insert mode (this guy works...)
+inoremap hh <Esc>
