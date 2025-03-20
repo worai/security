@@ -6,8 +6,12 @@ use tokio::net::TcpStream;
 use tokio::time::{timeout, Duration};
 use futures::future::join_all;
 use reqwest::Client;
+use sysinfo::Networks;
 // use whois_rust::{WhoIs, WhoIsLookupOptions};
 use trust_dns_resolver::{config::*, TokioAsyncResolver};
+
+mod db;
+
 
 #[derive(Parser)]
 #[command(name="security")]
@@ -53,6 +57,9 @@ enum Commands {
         timeout: u64,
     },
 
+    #[command(about = "Scanning ports", long_about = "Scans which ports are open")]
+    ScanNetwork,
+
     #[command(about = "Display http headers", long_about = None)]
     HttpHeaders {
         #[arg(short, long)]
@@ -81,7 +88,11 @@ enum Commands {
     ReverseIp {
         #[arg(short, long)]
         ip: String,
-    }
+    },
+
+    #[command(about = "Read logs", long_about = None)]
+    ReadLogs,
+
 }
 
 async fn scan_port(ip: &str, port: u16, timeout_duration: Duration) -> Option<u16> {
@@ -108,6 +119,21 @@ async fn handle_scanner(ip: String, start_port: u16, end_port: u16, timeout: u64
     }
 }
 
+
+// should be careful using this in a high security work place
+fn scan_network() {
+  // let mut system = System::new_all();
+  // system.refresh_all();
+  let network = Networks::new(); //.refresh(&system);
+
+  println!("Active network interfaces:");
+  for (interface, _) in network.iter() {
+    println!("- {}", interface);
+  }
+  // for (interface, data) in system.
+}
+
+
 async fn analyze_http_headers(url: String) {
     let client = Client::new();
     match client.get(&url).send().await {
@@ -123,7 +149,7 @@ async fn analyze_http_headers(url: String) {
 
 
 // TODO whois lookup
-async fn whois_lookup(domain: String) {
+async fn whois_lookup(_domain: String) {
     /*
     let whois = WhoIs::from_path("/etc/whois.conf").unwrap();
     // let options = WhoIsLookup
@@ -131,7 +157,7 @@ async fn whois_lookup(domain: String) {
     
     let options = WhoIsLookupOptions
 
-    match whois.lookup(domain) {
+    match whois.lookup(_domain) {
         Ok(info) => println!("{}", info),
         Err(e) => println!("Whois lookup failed: {}", e),
     }
@@ -213,6 +239,14 @@ async fn main() {
     }
     */
 
+    // use db::*;
+    let conn = db::initialize_db();
+    if conn.is_err() {
+        println!("Failed to initialize database, quitting process, {}", conn.err().unwrap());
+        return;
+    }
+    let conn = conn.unwrap();
+
     let cli = Cli::parse();
 
     if cli.debug {
@@ -225,13 +259,18 @@ async fn main() {
 
     match &cli.command {
         Some(Commands::Greet { name }) => {
-            println!("Hello, {}! Welocome to my CLI tool.", name);
+            let message = format!("Hello, {}! Welocome to my CLI tool.", name);
+            println!("{}", &message.as_str());
+            db::log_activity(&conn, message.as_str()).unwrap();
         }
         Some(Commands::Add { a, b }) => {
             println!("The sum of {} and {} is {}", a, b, a + b);
         }
         Some(Commands::Scanner { ip, start_port, end_port, timeout } ) => {
             handle_scanner( ip.to_string(), *start_port, *end_port, *timeout).await;
+        }
+        Some(Commands::ScanNetwork) => {
+            scan_network();
         }
         Some(Commands::HttpHeaders { url }) => {
            analyze_http_headers(url.clone()).await;
@@ -247,6 +286,12 @@ async fn main() {
         }
         Some(Commands::ReverseIp { ip } ) => {
             reverse_ip_lookup( ip.clone() ).await;
+        }
+        Some(Commands::ReadLogs) => {
+            let result = db::read_logs(&conn);
+            if result.is_err() {
+                println!("Failed to read logs: {}", result.err().unwrap());
+            }
         }
         None => {},
     }

@@ -5,10 +5,16 @@ edition = "2021"
 
 # enabling the "derive" feature is necessary in order to derive from stuff in the rs file
 [dependencies]
+chrono = "0.4.40"
 clap = { version = "4.5.29", features = ["derive"] }
 futures = "0.3.31"
+hex = "0.4.3"
+hmac = "0.12.1"
 pcap = "2.2.0"
 reqwest = "0.12.12"
+rusqlite = { version = "0.34.0", features = ["bundled"] }
+sha2 = "0.10.8"
+sysinfo = "0.33.1"
 tokio = { version = "1.43.0", features = ["full"] }
 trust-dns-resolver = "0.23.2"
 whois-rust = "1.6.0"
