@@ -115,6 +115,7 @@ async fn handle_scanner(ip: String, start_port: u16, end_port: u16, timeout: u64
     }
     let print_output = join_all(tasks).await;
     for port in print_output.into_iter().flatten() {
+
         println!("Port {} is open!", port);
     }
 }
@@ -241,15 +242,23 @@ async fn main() {
 
     // use db::*;
     let conn = db::initialize_db();
-    if conn.is_err() {
-        println!("Failed to initialize database, quitting process, {}", conn.err().unwrap());
-        return;
-    }
-    let conn = conn.unwrap();
+    let conn = match conn {
+        Ok(conn) => conn,
+        Err(_) => {
+            println!("Failed to initialize database, quitting process, {}", conn.err().unwrap());
+            return;
+        },
+    };
+    // if conn.is_err() {
+    //     println!("Failed to initialize database, quitting process, {}", conn.err().unwrap());
+    //     return;
+    // }
+    // let conn = conn.unwrap();
 
     let cli = Cli::parse();
 
-    if cli.debug {
+    let debug = cli.debug;
+    if debug {
         println!("Debug mode is ON");
     }
 
@@ -257,40 +266,114 @@ async fn main() {
         println!("Hello, {}!", name);
     }
 
+    if debug {
+        let result = db::log_activity(&conn, "Debug mode is ON");
+        if result.is_err() {
+            println!("Failed to log Greeting: {}", result.err().unwrap());
+        }
+    }
+
     match &cli.command {
         Some(Commands::Greet { name }) => {
-            let message = format!("Hello, {}! Welocome to my CLI tool.", name);
+            let message = format!("Hello, {}! Welcome to my CLI tool.", name);
             println!("{}", &message.as_str());
-            db::log_activity(&conn, message.as_str()).unwrap();
+            let result = db::log_activity(&conn, message.as_str());
+            if result.is_err() {
+                println!("Failed to log Greeting: {}", result.err().unwrap());
+            }
         }
         Some(Commands::Add { a, b }) => {
             println!("The sum of {} and {} is {}", a, b, a + b);
         }
         Some(Commands::Scanner { ip, start_port, end_port, timeout } ) => {
+            let result = db::log_activity(&conn, "Starting scanner");
+            if result.is_err() {
+                println!("Failed to log Scanner: {}", result.err().unwrap());
+            }
             handle_scanner( ip.to_string(), *start_port, *end_port, *timeout).await;
+            let result = db::log_activity(&conn, "Scanner finished");
+            if result.is_err() {
+                println!("Failed to log Scanner: {}", result.err().unwrap());
+            }
         }
         Some(Commands::ScanNetwork) => {
+            let result = db::log_activity(&conn, "Starting network scan");
+            if result.is_err() {
+                println!("Failed to log Network Scanner: {}", result.err().unwrap());
+            }
             scan_network();
+            let result = db::log_activity(&conn, "Network scan finished");
+            if result.is_err() {
+                println!("Failed to log Network Scanner: {}", result.err().unwrap());
+            }
         }
         Some(Commands::HttpHeaders { url }) => {
-           analyze_http_headers(url.clone()).await;
+            let result = db::log_activity(&conn, format!("Starting HTTP Header analysis of url {}", url).as_str());
+            if result.is_err() {
+                println!("Failed to log HTTP Header analysis: {}", result.err().unwrap());
+            }
+            analyze_http_headers(url.clone()).await;
+            let result = db::log_activity(&conn, "HTTP Header analysis finished");
+            if result.is_err() {
+                println!("Failed to log HTTP Header analysis: {}", result.err().unwrap());
+            }
         }
         Some(Commands::Whois { domain } ) => {
+            let result = db::log_activity(&conn, format!("Starting whois lookup of domain {}", domain).as_str());
+            if result.is_err() {
+                println!("Failed to log whois lookup: {}", result.err().unwrap());
+            }
             whois_lookup(domain.clone()).await;
+            let result = db::log_activity(&conn, "whois lookup finished");
+            if result.is_err() {
+                println!("Failed to log whois lookup: {}", result.err().unwrap());
+            }
         }
         Some(Commands::DnsLookup { domain } ) => {
+            let result = db::log_activity(&conn, format!("Starting DNS lookup of domain {}", domain).as_str());
+            if result.is_err() {
+                println!("Failed to log DNS lookup: {}", result.err().unwrap());
+            }
             dns_lookup(domain.clone()).await;
+            let result = db::log_activity(&conn, "DNS lookup finished");
+            if result.is_err() {
+                println!("Failed to log DNS lookup: {}", result.err().unwrap());
+            }
         }
         Some(Commands::Subdomain { domain } ) => {
+            let result = db::log_activity(&conn, format!("Starting subdomain enumeration of domain {}", domain).as_str());
+            if result.is_err() {
+                println!("Failed to log subdomain enumeration: {}", result.err().unwrap());
+            }
             subdomain_enumeration(domain.clone()).await;
+            let result = db::log_activity(&conn, "subdomain enumeration finished");
+            if result.is_err() {
+                println!("Failed to log subdomain enumeration: {}", result.err().unwrap());
+            }
         }
         Some(Commands::ReverseIp { ip } ) => {
+            let result = db::log_activity(&conn, format!("Starting reverse IP lookup of IP {}", ip).as_str());
+            if result.is_err() {
+                println!("Failed to log reverse IP lookup: {}", result.err().unwrap());
+            }
             reverse_ip_lookup( ip.clone() ).await;
+            let result = db::log_activity(&conn, "reverse IP lookup finished");
+            if result.is_err() {
+                println!("Failed to log reverse IP lookup: {}", result.err().unwrap());
+            }
         }
         Some(Commands::ReadLogs) => {
+            let result = db::log_activity(&conn, "Reading logs");
+            if result.is_err() {
+                println!("Failed to log PRIOR to read logs: {}", result.err().unwrap());
+            }
             let result = db::read_logs(&conn);
             if result.is_err() {
                 println!("Failed to read logs: {}", result.err().unwrap());
+                let result = db::log_activity(&conn, "Failed to read logs");
+                if result.is_err() {
+                    println!("Failed to log AFTER read logs: {}", result.err().unwrap());
+                }
             }
         }
         None => {},
