@@ -17,7 +17,7 @@ mod db;
 
 #[derive(Parser)]
 #[command(name="security")]
-#[command(about = "security related CLI tool", long_about = None)]
+#[command(about = "Security related CLI tool", long_about = "Security related CLI tool. !Commands with exclamation points should be handled with care!!")]
 struct Cli {
     #[arg(short, long)]
     debug: bool,
@@ -59,7 +59,7 @@ enum Commands {
         timeout: u64,
     },
 
-    #[command(about = "Scanning ports", long_about = "Scans which ports are open")]
+    #[command(about = "Scanning ports!", long_about = "Scans which ports are open -> should be careful using this in a high security work place!!")]
     ScanNetwork,
 
     #[command(about = "Display http headers", long_about = None)]
